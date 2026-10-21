@@ -1,0 +1,11 @@
+[tool.poetry]
+name = "pokedex-api"
+version = "1.0.0"
+description = "FastAPI com Docker Compose e Poetry"
+authors = ["Estudante"]
+package-mode = false
+
+[tool.poetry.dependencies]
+python = ">=3.12,<3.13"
+fastapi = "0.115.12"
+uvicorn = {version = "0.34.2", extras = ["standard"]}
