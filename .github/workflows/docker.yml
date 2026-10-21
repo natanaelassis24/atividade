@@ -1,0 +1,53 @@
+name: Validar Docker e gerar lockfile
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  validar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validar Compose e construir imagem
+        run: |
+          docker compose config --quiet
+          docker compose build --no-cache
+      - name: Gerar lockfile se ausente
+        run: |
+          if [ ! -f poetry.lock ]; then
+            docker compose run --rm --no-deps api poetry lock
+          fi
+      - name: Construir e iniciar com dependências travadas
+        run: docker compose up --build -d --wait --wait-timeout 120
+      - name: Verificar endpoints
+        run: |
+          curl --fail --retry 5 --retry-delay 2 http://localhost:8000/health
+          curl --fail http://localhost:8000/openapi.json
+          python - <<'PY'
+          import json
+          import urllib.request
+          def get(path):
+              with urllib.request.urlopen("http://localhost:8000" + path) as response:
+                  return json.load(response)
+          assert get("/health") == {"status": "ok"}
+          assert get("/")["ambiente"] == "development"
+          assert "/health" in get("/openapi.json")["paths"]
+          PY
+      - name: Salvar lockfile validado no repositório
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add poetry.lock
+          if ! git diff --cached --quiet; then
+            git commit -m "Adiciona poetry.lock validado com Docker"
+            git push
+          fi
+      - name: Logs
+        if: always()
+        run: docker compose logs --no-color
+      - name: Encerrar containers
+        if: always()
+        run: docker compose down
