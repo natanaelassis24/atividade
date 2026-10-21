@@ -12,10 +12,10 @@ Não é necessário instalar Python ou Poetry no host.
 
 ## 2. Obter o projeto
 
-Depois de publicar este projeto, substitua o endereço pelo URL real:
+Clone o repositório:
 
 ```sh
-git clone <URL_DO_REPOSITORIO> pokedex-api
+git clone https://github.com/natanaelassis24/atividade.git pokedex-api
 cd pokedex-api
 ```
 
@@ -81,25 +81,25 @@ docker run --rm -p 8000:8000 pokedex-api
 
 ## Lockfile
 
-As versões diretas estão fixadas em `pyproject.toml`. Como não há Poetry/Python
-neste ambiente, o lockfile não foi gerado localmente. Sem ele, o build resolve
-as dependências transitivas automaticamente. Para gerar o arquivo usando
-somente Docker, depois do primeiro build:
+As versões diretas estão fixadas em `pyproject.toml`, e `poetry.lock` fixa também
+as dependências transitivas. O Dockerfile usa esse lockfile na instalação.
+Para atualizar as dependências, gere um novo lockfile e reconstrua a imagem:
 
 ```sh
 docker compose run --rm --no-deps api poetry lock
 docker compose up --build -d
 ```
 
-Inclua `poetry.lock` no Git para fixar também as dependências transitivas.
-O Dockerfile o utiliza automaticamente quando presente. Mudanças nas
-dependências exigem reconstruir a imagem.
+Inclua o arquivo atualizado no Git.
 
 ## Estado da verificação
 
-Docker e Python não estão disponíveis no ambiente de elaboração, portanto o
-build e a execução ainda não foram testados. Os passos acima descrevem como
-validar o fluxo completo em uma máquina com Docker.
+O [GitHub Actions](https://github.com/natanaelassis24/atividade/actions/runs/39682286773)
+validou o Compose, construiu a imagem sem cache, gerou o lockfile, reconstruiu
+com dependências travadas e iniciou o serviço até o healthcheck passar.
+Também verificou `/health`, `/` e `/openapi.json` e encerrou os containers.
+A automação em `.github/workflows/docker.yml` repete os testes a cada push na
+branch `master`.
 
 ## Referências
 
