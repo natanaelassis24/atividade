@@ -1,0 +1,40 @@
+name: Testar FastAPI e Celery
+on:
+  push:
+    branches: [master]
+    paths: ['api-celery/**', '.github/workflows/celery.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  integrar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: api-celery
+    steps:
+      - uses: actions/checkout@v4
+      - name: Iniciar API, worker e Redis
+        run: docker compose up --build -d
+      - name: Testar endpoints e resultados reais
+        run: |
+          mkdir -p evidencias
+          set -o pipefail
+          python testar_api.py | tee evidencias/testes.log
+          docker compose logs --no-color worker > evidencias/worker.log
+      - name: Salvar evidências no repositório
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add evidencias/testes.log evidencias/worker.log
+          if ! git diff --cached --quiet; then
+            git commit -m "Registra testes reais da API Celery [skip ci]"
+            git push
+          fi
+      - name: Logs do ambiente
+        if: always()
+        run: docker compose logs --no-color
+      - name: Encerrar ambiente
+        if: always()
+        run: docker compose down
