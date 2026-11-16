@@ -16,6 +16,14 @@ A cada push na branch `master` (branch principal deste repositório), o job:
 2. Instala Python 3.12 e Poetry 2.1.3.
 3. Executa `poetry install --no-root --no-interaction`.
 4. Executa `poetry run pytest`.
+5. Constrói a mesma aplicação testada com
+   `docker build -f ci-fastapi/Dockerfile -t "$IMAGE_NAME" .` na raiz do repositório.
+6. Executa `docker run`, aguarda o startup e verifica OpenAPI, autenticação
+   válida (200) e inválida (401) por HTTP real. Exibe logs e remove o container.
+
+`IMAGE_NAME` é `fastapi-app:latest`. O contexto do build é `.` (raiz), e o
+Dockerfile específico desta atividade fica em `ci-fastapi/Dockerfile`.
+Esses passos ocorrem depois dos testes e não ignoram falhas de build ou execução.
 
 Se qualquer teste falhar, pytest retorna um código diferente de zero e o job
 falha. O workflow também roda em pull requests destinados a `master`.

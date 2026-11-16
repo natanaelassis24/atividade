@@ -10,6 +10,9 @@ on:
 permissions:
   contents: read
 
+env:
+  IMAGE_NAME: fastapi-app:latest
+
 jobs:
   testes:
     runs-on: ubuntu-latest
@@ -34,3 +37,30 @@ jobs:
 
       - name: Executar testes
         run: poetry run pytest
+
+      - name: Construir imagem Docker
+        working-directory: .
+        run: docker build -f ci-fastapi/Dockerfile -t "$IMAGE_NAME" .
+
+      - name: Executar e validar container
+        working-directory: .
+        run: |
+          docker run --detach --name fastapi-ci --publish 127.0.0.1:8000:8000 "$IMAGE_NAME"
+          python ci-fastapi/validar_container.py
+          test "$(docker inspect --format '{{.State.Running}}' fastapi-ci)" = "true"
+
+      - name: Exibir logs do container
+        if: always()
+        working-directory: .
+        run: |
+          if docker container inspect fastapi-ci > /dev/null 2>&1; then
+            docker logs fastapi-ci
+          fi
+
+      - name: Remover container de teste
+        if: always()
+        working-directory: .
+        run: |
+          if docker container inspect fastapi-ci > /dev/null 2>&1; then
+            docker rm --force fastapi-ci
+          fi
