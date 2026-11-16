@@ -25,7 +25,7 @@ def main():
                 assert resposta.status == 200
                 assert "/auth" in json.load(resposta)["paths"]
             break
-        except (URLError, TimeoutError):
+        except (URLError, TimeoutError, ConnectionError):
             time.sleep(1)
     else:
         raise RuntimeError("O container nao disponibilizou a API no prazo.")
